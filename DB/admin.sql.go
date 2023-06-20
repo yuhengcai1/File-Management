@@ -39,78 +39,36 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 
 const createUsers = `-- name: CreateUsers :one
 INSERT INTO users (
-  id,username,password
+  id,username,userhash,admin
 ) VALUES (
-  $1,$2,$3
+  $1,$2,$3,$4
 )
-RETURNING id, username, password, created_at
+RETURNING id, username, userhash, created_at, admin
 `
 
 type CreateUsersParams struct {
-	ID       int32  `json:"id"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	ID       int32        `json:"id"`
+	Username string       `json:"username"`
+	Userhash string       `json:"userhash"`
+	Admin    sql.NullBool `json:"admin"`
 }
 
 func (q *Queries) CreateUsers(ctx context.Context, arg CreateUsersParams) (User, error) {
-	row := q.queryRow(ctx, q.createUsersStmt, createUsers, arg.ID, arg.Username, arg.Password)
+	row := q.queryRow(ctx, q.createUsersStmt, createUsers,
+		arg.ID,
+		arg.Username,
+		arg.Userhash,
+		arg.Admin,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
-		&i.Password,
+		&i.Userhash,
 		&i.CreatedAt,
+		&i.Admin,
 	)
 	return i, err
-}
-
-const createadmin = `-- name: Createadmin :one
-INSERT INTO admin (
-  id
-) VALUES (
-  $1
-)
-RETURNING id
-`
-
-func (q *Queries) Createadmin(ctx context.Context, id int32) (int32, error) {
-	row := q.queryRow(ctx, q.createadminStmt, createadmin, id)
-	err := row.Scan(&id)
-	return id, err
-}
-
-const createnormal = `-- name: Createnormal :one
-INSERT INTO normal (
-  id,createdby
-) VALUES (
-  $1,$2
-)
-RETURNING id, createdby
-`
-
-type CreatenormalParams struct {
-	ID        int32         `json:"id"`
-	Createdby sql.NullInt32 `json:"createdby"`
-}
-
-func (q *Queries) Createnormal(ctx context.Context, arg CreatenormalParams) (Normal, error) {
-	row := q.queryRow(ctx, q.createnormalStmt, createnormal, arg.ID, arg.Createdby)
-	var i Normal
-	err := row.Scan(&i.ID, &i.Createdby)
-	return i, err
-}
-
-const deleteAdmin = `-- name: DeleteAdmin :exec
-
-DELETE FROM admin WHERE id = $1
-`
-
-// All Delete operations
-func (q *Queries) DeleteAdmin(ctx context.Context, id int32) error {
-
-	
-	_, err := q.exec(ctx, q.deleteAdminStmt, deleteAdmin, id)
-	return err
 }
 
 const deleteDocumentAdmin = `-- name: DeleteDocumentAdmin :exec
@@ -136,34 +94,15 @@ func (q *Queries) DeleteDocumentNormal(ctx context.Context, arg DeleteDocumentNo
 	return err
 }
 
-const deleteNormal = `-- name: DeleteNormal :exec
-DELETE FROM normal WHERE id = $1
-`
-
-func (q *Queries) DeleteNormal(ctx context.Context, id int32) error {
-	_, err := q.exec(ctx, q.deleteNormalStmt, deleteNormal, id)
-	return err
-}
-
 const deleteusers = `-- name: Deleteusers :exec
+
 DELETE FROM users WHERE id = $1
 `
 
+// All Delete operations
 func (q *Queries) Deleteusers(ctx context.Context, id int32) error {
 	_, err := q.exec(ctx, q.deleteusersStmt, deleteusers, id)
 	return err
-}
-
-const getAdminByID = `-- name: GetAdminByID :one
-SELECT id FROM admin
-WHERE id = $1
-`
-
-// All Get operations
-func (q *Queries) GetAdminByID(ctx context.Context, id int32) (int32, error) {
-	row := q.queryRow(ctx, q.getAdminByIDStmt, getAdminByID, id)
-	err := row.Scan(&id)
-	return id, err
 }
 
 const getDocumentByCreatebyNormal = `-- name: GetDocumentByCreatebyNormal :many
@@ -235,21 +174,66 @@ func (q *Queries) GetDocumentByID(ctx context.Context, documentid int32) ([]Docu
 	return items, nil
 }
 
-const getNormalByCreateby = `-- name: GetNormalByCreateby :many
-SELECT id, createdby FROM normal
-WHERE id = $1
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, username, userhash, created_at, admin FROM users WHERE id = $1
 `
 
-func (q *Queries) GetNormalByCreateby(ctx context.Context, id int32) ([]Normal, error) {
-	rows, err := q.query(ctx, q.getNormalByCreatebyStmt, getNormalByCreateby, id)
+func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
+	row := q.queryRow(ctx, q.getUserByIDStmt, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Userhash,
+		&i.CreatedAt,
+		&i.Admin,
+	)
+	return i, err
+}
+
+const getUserByIDAndAdmin = `-- name: GetUserByIDAndAdmin :one
+SELECT id, username, userhash, created_at, admin FROM users WHERE id = $1 AND admin = $2
+`
+
+type GetUserByIDAndAdminParams struct {
+	ID    int32        `json:"id"`
+	Admin sql.NullBool `json:"admin"`
+}
+
+// All Get operations
+func (q *Queries) GetUserByIDAndAdmin(ctx context.Context, arg GetUserByIDAndAdminParams) (User, error) {
+	row := q.queryRow(ctx, q.getUserByIDAndAdminStmt, getUserByIDAndAdmin, arg.ID, arg.Admin)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Userhash,
+		&i.CreatedAt,
+		&i.Admin,
+	)
+	return i, err
+}
+
+const getUserByNAME = `-- name: GetUserByNAME :many
+SELECT id, username, userhash, created_at, admin FROM users WHERE username = $1
+`
+
+func (q *Queries) GetUserByNAME(ctx context.Context, username string) ([]User, error) {
+	rows, err := q.query(ctx, q.getUserByNAMEStmt, getUserByNAME, username)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Normal
+	var items []User
 	for rows.Next() {
-		var i Normal
-		if err := rows.Scan(&i.ID, &i.Createdby); err != nil {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Userhash,
+			&i.CreatedAt,
+			&i.Admin,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -263,49 +247,17 @@ func (q *Queries) GetNormalByCreateby(ctx context.Context, id int32) ([]Normal, 
 	return items, nil
 }
 
-const getNormalByID = `-- name: GetNormalByID :one
-SELECT id, createdby FROM normal
-WHERE id = $1
-`
-
-func (q *Queries) GetNormalByID(ctx context.Context, id int32) (Normal, error) {
-	row := q.queryRow(ctx, q.getNormalByIDStmt, getNormalByID, id)
-	var i Normal
-	err := row.Scan(&i.ID, &i.Createdby)
-	return i, err
-}
-
-const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, password, created_at FROM users WHERE id = $1
-`
-
-func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
-	row := q.queryRow(ctx, q.getUserByIDStmt, getUserByID, id)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Username,
-		&i.Password,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const updateNormal = `-- name: UpdateNormal :exec
-UPDATE normal SET id = $1
-`
-
-func (q *Queries) UpdateNormal(ctx context.Context, id int32) error {
-	_, err := q.exec(ctx, q.updateNormalStmt, updateNormal, id)
-	return err
-}
-
 const updateUsers = `-- name: UpdateUsers :exec
-UPDATE users SET id = $1
+UPDATE users SET userhash = $1 WHERE id = $2
 `
+
+type UpdateUsersParams struct {
+	Userhash string `json:"userhash"`
+	ID       int32  `json:"id"`
+}
 
 // All Update operations
-func (q *Queries) UpdateUsers(ctx context.Context, id int32) error {
-	_, err := q.exec(ctx, q.updateUsersStmt, updateUsers, id)
+func (q *Queries) UpdateUsers(ctx context.Context, arg UpdateUsersParams) error {
+	_, err := q.exec(ctx, q.updateUsersStmt, updateUsers, arg.Userhash, arg.ID)
 	return err
 }

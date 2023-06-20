@@ -8,10 +8,6 @@ import (
 	"database/sql"
 )
 
-type Admin struct {
-	ID int32 `json:"id"`
-}
-
 type Document struct {
 	Documentid int32         `json:"documentid"`
 	Name       string        `json:"name"`
@@ -19,14 +15,10 @@ type Document struct {
 	Createdby  sql.NullInt32 `json:"createdby"`
 }
 
-type Normal struct {
-	ID        int32         `json:"id"`
-	Createdby sql.NullInt32 `json:"createdby"`
-}
-
 type User struct {
 	ID        int32        `json:"id"`
 	Username  string       `json:"username"`
-	Password  string       `json:"password"`
+	Userhash  string       `json:"userhash"`
 	CreatedAt sql.NullTime `json:"created_at"`
+	Admin     sql.NullBool `json:"admin"`
 }

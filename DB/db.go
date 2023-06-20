@@ -30,29 +30,14 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createUsersStmt, err = db.PrepareContext(ctx, createUsers); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUsers: %w", err)
 	}
-	if q.createadminStmt, err = db.PrepareContext(ctx, createadmin); err != nil {
-		return nil, fmt.Errorf("error preparing query Createadmin: %w", err)
-	}
-	if q.createnormalStmt, err = db.PrepareContext(ctx, createnormal); err != nil {
-		return nil, fmt.Errorf("error preparing query Createnormal: %w", err)
-	}
-	if q.deleteAdminStmt, err = db.PrepareContext(ctx, deleteAdmin); err != nil {
-		return nil, fmt.Errorf("error preparing query DeleteAdmin: %w", err)
-	}
 	if q.deleteDocumentAdminStmt, err = db.PrepareContext(ctx, deleteDocumentAdmin); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteDocumentAdmin: %w", err)
 	}
 	if q.deleteDocumentNormalStmt, err = db.PrepareContext(ctx, deleteDocumentNormal); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteDocumentNormal: %w", err)
 	}
-	if q.deleteNormalStmt, err = db.PrepareContext(ctx, deleteNormal); err != nil {
-		return nil, fmt.Errorf("error preparing query DeleteNormal: %w", err)
-	}
 	if q.deleteusersStmt, err = db.PrepareContext(ctx, deleteusers); err != nil {
 		return nil, fmt.Errorf("error preparing query Deleteusers: %w", err)
-	}
-	if q.getAdminByIDStmt, err = db.PrepareContext(ctx, getAdminByID); err != nil {
-		return nil, fmt.Errorf("error preparing query GetAdminByID: %w", err)
 	}
 	if q.getDocumentByCreatebyNormalStmt, err = db.PrepareContext(ctx, getDocumentByCreatebyNormal); err != nil {
 		return nil, fmt.Errorf("error preparing query GetDocumentByCreatebyNormal: %w", err)
@@ -60,17 +45,14 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getDocumentByIDStmt, err = db.PrepareContext(ctx, getDocumentByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetDocumentByID: %w", err)
 	}
-	if q.getNormalByCreatebyStmt, err = db.PrepareContext(ctx, getNormalByCreateby); err != nil {
-		return nil, fmt.Errorf("error preparing query GetNormalByCreateby: %w", err)
-	}
-	if q.getNormalByIDStmt, err = db.PrepareContext(ctx, getNormalByID); err != nil {
-		return nil, fmt.Errorf("error preparing query GetNormalByID: %w", err)
-	}
 	if q.getUserByIDStmt, err = db.PrepareContext(ctx, getUserByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByID: %w", err)
 	}
-	if q.updateNormalStmt, err = db.PrepareContext(ctx, updateNormal); err != nil {
-		return nil, fmt.Errorf("error preparing query UpdateNormal: %w", err)
+	if q.getUserByIDAndAdminStmt, err = db.PrepareContext(ctx, getUserByIDAndAdmin); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUserByIDAndAdmin: %w", err)
+	}
+	if q.getUserByNAMEStmt, err = db.PrepareContext(ctx, getUserByNAME); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUserByNAME: %w", err)
 	}
 	if q.updateUsersStmt, err = db.PrepareContext(ctx, updateUsers); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateUsers: %w", err)
@@ -90,21 +72,6 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createUsersStmt: %w", cerr)
 		}
 	}
-	if q.createadminStmt != nil {
-		if cerr := q.createadminStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing createadminStmt: %w", cerr)
-		}
-	}
-	if q.createnormalStmt != nil {
-		if cerr := q.createnormalStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing createnormalStmt: %w", cerr)
-		}
-	}
-	if q.deleteAdminStmt != nil {
-		if cerr := q.deleteAdminStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing deleteAdminStmt: %w", cerr)
-		}
-	}
 	if q.deleteDocumentAdminStmt != nil {
 		if cerr := q.deleteDocumentAdminStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deleteDocumentAdminStmt: %w", cerr)
@@ -115,19 +82,9 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing deleteDocumentNormalStmt: %w", cerr)
 		}
 	}
-	if q.deleteNormalStmt != nil {
-		if cerr := q.deleteNormalStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing deleteNormalStmt: %w", cerr)
-		}
-	}
 	if q.deleteusersStmt != nil {
 		if cerr := q.deleteusersStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deleteusersStmt: %w", cerr)
-		}
-	}
-	if q.getAdminByIDStmt != nil {
-		if cerr := q.getAdminByIDStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing getAdminByIDStmt: %w", cerr)
 		}
 	}
 	if q.getDocumentByCreatebyNormalStmt != nil {
@@ -140,24 +97,19 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getDocumentByIDStmt: %w", cerr)
 		}
 	}
-	if q.getNormalByCreatebyStmt != nil {
-		if cerr := q.getNormalByCreatebyStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing getNormalByCreatebyStmt: %w", cerr)
-		}
-	}
-	if q.getNormalByIDStmt != nil {
-		if cerr := q.getNormalByIDStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing getNormalByIDStmt: %w", cerr)
-		}
-	}
 	if q.getUserByIDStmt != nil {
 		if cerr := q.getUserByIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserByIDStmt: %w", cerr)
 		}
 	}
-	if q.updateNormalStmt != nil {
-		if cerr := q.updateNormalStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing updateNormalStmt: %w", cerr)
+	if q.getUserByIDAndAdminStmt != nil {
+		if cerr := q.getUserByIDAndAdminStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUserByIDAndAdminStmt: %w", cerr)
+		}
+	}
+	if q.getUserByNAMEStmt != nil {
+		if cerr := q.getUserByNAMEStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUserByNAMEStmt: %w", cerr)
 		}
 	}
 	if q.updateUsersStmt != nil {
@@ -206,20 +158,14 @@ type Queries struct {
 	tx                              *sql.Tx
 	createDocumentStmt              *sql.Stmt
 	createUsersStmt                 *sql.Stmt
-	createadminStmt                 *sql.Stmt
-	createnormalStmt                *sql.Stmt
-	deleteAdminStmt                 *sql.Stmt
 	deleteDocumentAdminStmt         *sql.Stmt
 	deleteDocumentNormalStmt        *sql.Stmt
-	deleteNormalStmt                *sql.Stmt
 	deleteusersStmt                 *sql.Stmt
-	getAdminByIDStmt                *sql.Stmt
 	getDocumentByCreatebyNormalStmt *sql.Stmt
 	getDocumentByIDStmt             *sql.Stmt
-	getNormalByCreatebyStmt         *sql.Stmt
-	getNormalByIDStmt               *sql.Stmt
 	getUserByIDStmt                 *sql.Stmt
-	updateNormalStmt                *sql.Stmt
+	getUserByIDAndAdminStmt         *sql.Stmt
+	getUserByNAMEStmt               *sql.Stmt
 	updateUsersStmt                 *sql.Stmt
 }
 
@@ -229,20 +175,14 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		tx:                              tx,
 		createDocumentStmt:              q.createDocumentStmt,
 		createUsersStmt:                 q.createUsersStmt,
-		createadminStmt:                 q.createadminStmt,
-		createnormalStmt:                q.createnormalStmt,
-		deleteAdminStmt:                 q.deleteAdminStmt,
 		deleteDocumentAdminStmt:         q.deleteDocumentAdminStmt,
 		deleteDocumentNormalStmt:        q.deleteDocumentNormalStmt,
-		deleteNormalStmt:                q.deleteNormalStmt,
 		deleteusersStmt:                 q.deleteusersStmt,
-		getAdminByIDStmt:                q.getAdminByIDStmt,
 		getDocumentByCreatebyNormalStmt: q.getDocumentByCreatebyNormalStmt,
 		getDocumentByIDStmt:             q.getDocumentByIDStmt,
-		getNormalByCreatebyStmt:         q.getNormalByCreatebyStmt,
-		getNormalByIDStmt:               q.getNormalByIDStmt,
 		getUserByIDStmt:                 q.getUserByIDStmt,
-		updateNormalStmt:                q.updateNormalStmt,
+		getUserByIDAndAdminStmt:         q.getUserByIDAndAdminStmt,
+		getUserByNAMEStmt:               q.getUserByNAMEStmt,
 		updateUsersStmt:                 q.updateUsersStmt,
 	}
 }
