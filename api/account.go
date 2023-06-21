@@ -39,10 +39,16 @@ func (server *Server) createuser(ctx * gin.Context){
 		Admin:  admin,
 	}
 
-	if _, err := server.store.CreateUsers(ctx,arg); err!= nil {
+	user, err := server.store.CreateUsers(ctx,arg); 
+	
+	if err!= nil {
         ctx.JSON(400, gin.H{"error": err.Error()})
         return
     }
+
+	rep := NewUserResponse(user)
+
+	ctx.JSON(http.StatusOK, rep)
 
 }
 
@@ -250,7 +256,7 @@ func (server *Server) deleteDocumentNormal(ctx *gin.Context){
 		Documentid: req.documentid,
 		Createdby: req.Createdby,
 	}
-	
+
 	err := server.store.DeleteDocumentNormal(ctx, arg)
 
 	if err != nil {

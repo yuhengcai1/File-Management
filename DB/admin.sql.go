@@ -214,37 +214,21 @@ func (q *Queries) GetUserByIDAndAdmin(ctx context.Context, arg GetUserByIDAndAdm
 	return i, err
 }
 
-const getUserByNAME = `-- name: GetUserByNAME :many
+const getUserByNAME = `-- name: GetUserByNAME :one
 SELECT id, username, userhash, created_at, admin FROM users WHERE username = $1
 `
 
-func (q *Queries) GetUserByNAME(ctx context.Context, username string) ([]User, error) {
-	rows, err := q.query(ctx, q.getUserByNAMEStmt, getUserByNAME, username)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []User
-	for rows.Next() {
-		var i User
-		if err := rows.Scan(
-			&i.ID,
-			&i.Username,
-			&i.Userhash,
-			&i.CreatedAt,
-			&i.Admin,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetUserByNAME(ctx context.Context, username string) (User, error) {
+	row := q.queryRow(ctx, q.getUserByNAMEStmt, getUserByNAME, username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Userhash,
+		&i.CreatedAt,
+		&i.Admin,
+	)
+	return i, err
 }
 
 const updateUsers = `-- name: UpdateUsers :exec

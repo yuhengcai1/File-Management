@@ -20,7 +20,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id int32) (User, error)
 	// All Get operations
 	GetUserByIDAndAdmin(ctx context.Context, arg GetUserByIDAndAdminParams) (User, error)
-	GetUserByNAME(ctx context.Context, username string) ([]User, error)
+	GetUserByNAME(ctx context.Context, username string) (User, error)
 	// All Update operations
 	UpdateUsers(ctx context.Context, arg UpdateUsersParams) error
 }

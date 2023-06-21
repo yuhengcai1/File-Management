@@ -22,7 +22,7 @@ SELECT * FROM users WHERE id = $1 AND admin = $2;
 -- name: GetUserByID :one
 SELECT * FROM users WHERE id = $1;
 
--- name: GetUserByNAME :many
+-- name: GetUserByNAME :one
 SELECT * FROM users WHERE username = $1;
 
 -- name: GetDocumentByCreatebyNormal :many

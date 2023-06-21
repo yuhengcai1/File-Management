@@ -1,10 +1,7 @@
 package DB
 
 import (
-	"database/sql"
-	"log"
-
-	
+	"database/sql"	
 )
 
 const (
@@ -32,16 +29,3 @@ func NewStore(db *sql.DB) *Store {
 	}
 }
 
-func start() {
-	conn, err := sql.Open(dbDriver, dbSource)
-	if err != nil {
-		log.Fatal("fall to create database connection", err)
-	}
-	testQueries = New(conn)
-
-	
-	
-	
-
-	
-}

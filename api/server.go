@@ -3,7 +3,9 @@ package api
 import (
 	"DB/DB"
 	"DB/token"
+	"DB/util"
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,21 +15,25 @@ import (
 var sqlDb *sql.DB
 
 type Server struct {
+    config util.Config
     store *DB.Store
     router *gin.Engine
     tokerMaker token.Maker
 }
 
-func NewServer(store *DB.Store) *Server {
-    tokenMaker, err := token.NewJWTMaker("")
+func NewServer(config util.Config, store *DB.Store) (*Server,error) {
+    tokenMaker, err := token.NewJWTMaker(config.TokenSymmetriKEy) //
+
     if err != nil {
-        return nil
+        return nil,fmt.Errorf("cannot create token %w", err)
     }
+
     server := &Server{
+        config : config,
         store: store,
         tokerMaker: tokenMaker,
-        
     }
+
     router := gin.Default()
 
     router.POST("/user", server.createuser)
@@ -35,13 +41,18 @@ func NewServer(store *DB.Store) *Server {
     router.DELETE("user",server.deleteuser)
     router.PUT("/user/", server.updateuser)
 
+    router.POST("/user/login", server.loginUser)
+
     router.POST("/documents", server.addDocuments)
     router.GET("/documents/:name", server.getDocumentsByName)
     router.GET("/documents/id", server.getDocumentsByID)
     router.DELETE("/documents/admin/:id", server.deleteDocumentAdmin)
     router.DELETE("/documents/normal/:id", server.deleteDocumentNormal)
    
-    return server
+
+    server.router = router
+
+    return server, nil
 }
 
 func Init() {
@@ -65,6 +76,15 @@ type CreateDocumentParams struct {
 	Createdby  sql.NullInt32 `json:"createdby"`
 }
 
+func (server *Server) Start(address string) error {
+    if(server.router == nil) {
+        fmt.Println("null in here")
+    }
+    return server.router.Run(address)
+}
 
 
+func errorResponse(err error) gin.H {
+	return gin.H{"error": err.Error()}
+}
 
