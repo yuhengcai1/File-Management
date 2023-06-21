@@ -142,36 +142,20 @@ func (q *Queries) GetDocumentByCreatebyNormal(ctx context.Context, arg GetDocume
 	return items, nil
 }
 
-const getDocumentByID = `-- name: GetDocumentByID :many
+const getDocumentByID = `-- name: GetDocumentByID :one
 SELECT documentid, name, created_at, createdby FROM document WHERE documentid = $1
 `
 
-func (q *Queries) GetDocumentByID(ctx context.Context, documentid int32) ([]Document, error) {
-	rows, err := q.query(ctx, q.getDocumentByIDStmt, getDocumentByID, documentid)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Document
-	for rows.Next() {
-		var i Document
-		if err := rows.Scan(
-			&i.Documentid,
-			&i.Name,
-			&i.CreatedAt,
-			&i.Createdby,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetDocumentByID(ctx context.Context, documentid int32) (Document, error) {
+	row := q.queryRow(ctx, q.getDocumentByIDStmt, getDocumentByID, documentid)
+	var i Document
+	err := row.Scan(
+		&i.Documentid,
+		&i.Name,
+		&i.CreatedAt,
+		&i.Createdby,
+	)
+	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
@@ -192,17 +176,12 @@ func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
 }
 
 const getUserByIDAndAdmin = `-- name: GetUserByIDAndAdmin :one
-SELECT id, username, userhash, created_at, admin FROM users WHERE id = $1 AND admin = $2
+SELECT id, username, userhash, created_at, admin FROM users WHERE id = $1
 `
 
-type GetUserByIDAndAdminParams struct {
-	ID    int32        `json:"id"`
-	Admin sql.NullBool `json:"admin"`
-}
-
 // All Get operations
-func (q *Queries) GetUserByIDAndAdmin(ctx context.Context, arg GetUserByIDAndAdminParams) (User, error) {
-	row := q.queryRow(ctx, q.getUserByIDAndAdminStmt, getUserByIDAndAdmin, arg.ID, arg.Admin)
+func (q *Queries) GetUserByIDAndAdmin(ctx context.Context, id int32) (User, error) {
+	row := q.queryRow(ctx, q.getUserByIDAndAdminStmt, getUserByIDAndAdmin, id)
 	var i User
 	err := row.Scan(
 		&i.ID,

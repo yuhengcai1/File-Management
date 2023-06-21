@@ -11,7 +11,7 @@ import (
 )
 
 type loginUser struct {
-	Username  string       `json:"username"`
+	UserID  int32       `json:"username"`
 	Password  string       `json:"password"`
 }
 
@@ -21,13 +21,13 @@ type loginResponse struct {
 }
 
 type userResponse struct {
-	Username          string    `json:"username"`
+	UserID  int32      `json:"username"`
 	CreatedAt         time.Time `json:"created_at"`
 }
 
 func NewUserResponse(user DB.User) userResponse {
 	return userResponse{
-		Username:          user.Username,
+		UserID:          user.ID,
 		CreatedAt:         user.CreatedAt.Time,
 	}
 }
@@ -40,7 +40,7 @@ func (server *Server) loginUser(ctx *gin.Context){
 		return
 	}
 	
-	user, err := server.store.GetUserByNAME(ctx,req.Username)
+	user, err := server.store.GetUserByID(ctx,req.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows { 
 			ctx.JSON(http.StatusNotFound,errorResponse(err))
@@ -57,8 +57,9 @@ func (server *Server) loginUser(ctx *gin.Context){
 	}
 
 	accessToken, _, err := server.tokerMaker.CreateToken(
-		user.Username,
+		user.ID,
 		server.config.AccessToken,
+		user.Admin.Bool,
 	)
 
 	if err != nil {

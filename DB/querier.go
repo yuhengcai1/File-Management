@@ -16,10 +16,10 @@ type Querier interface {
 	//All Delete operations
 	Deleteusers(ctx context.Context, id int32) error
 	GetDocumentByCreatebyNormal(ctx context.Context, arg GetDocumentByCreatebyNormalParams) ([]Document, error)
-	GetDocumentByID(ctx context.Context, documentid int32) ([]Document, error)
+	GetDocumentByID(ctx context.Context, documentid int32) (Document, error)
 	GetUserByID(ctx context.Context, id int32) (User, error)
 	// All Get operations
-	GetUserByIDAndAdmin(ctx context.Context, arg GetUserByIDAndAdminParams) (User, error)
+	GetUserByIDAndAdmin(ctx context.Context, id int32) (User, error)
 	GetUserByNAME(ctx context.Context, username string) (User, error)
 	// All Update operations
 	UpdateUsers(ctx context.Context, arg UpdateUsersParams) error

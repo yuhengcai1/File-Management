@@ -2,17 +2,17 @@ package api
 
 import (
 	"DB/DB"
+	"DB/token"
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type CreateUserRequest struct {
-	ID        int32        `json:"id"`
-	Username  string       `json:"username"`
+	Username  string		`json:"username"`
 	Password  string       `json:"password"`
-	Admin   bool 			`json:"admin"`
 }
 
 // add admin to the admin list and user list
@@ -23,9 +23,11 @@ func (server *Server) createuser(ctx * gin.Context){
         ctx.JSON(400, gin.H{"error": err.Error()})
         return
     }
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	var admin sql.NullBool
 
-	if req.Admin {
+	if authPayload.Admin {
     admin = sql.NullBool{Valid: true, Bool: true}
 	} else {
     admin = sql.NullBool{Valid: true, Bool: false}
@@ -35,12 +37,12 @@ func (server *Server) createuser(ctx * gin.Context){
 	arg :=  DB.CreateUsersParams{
 		Username: req.Username,
         Userhash: req.Password,
-		ID:  	req.ID,
+		ID:  	authPayload.UserID,
 		Admin:  admin,
 	}
 
 	user, err := server.store.CreateUsers(ctx,arg); 
-	
+
 	if err!= nil {
         ctx.JSON(400, gin.H{"error": err.Error()})
         return
@@ -56,7 +58,6 @@ func (server *Server) createuser(ctx * gin.Context){
 
 type GetUserByIDAndAdminParams struct {
 	ID    int32        `uri:"id"`
-	Admin sql.NullBool `uri:"admin"`
 }
 
 func (server *Server) getuser(ctx *gin.Context){
@@ -66,16 +67,19 @@ func (server *Server) getuser(ctx *gin.Context){
 		ctx.JSON(400, gin.H{"error": err.Error()})
         return
 	}
-
-	arg := DB.GetUserByIDAndAdminParams{
-		ID: req.ID,
-		Admin: req.Admin,
-	}
 	
-	user1, err := server.store.GetUserByIDAndAdmin(ctx, arg)
+	user1, err := server.store.GetUserByIDAndAdmin(ctx, req.ID)
 
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	if authPayload.Admin == false{
+		err := errors.New("Not admin")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
@@ -101,6 +105,15 @@ func (server *Server) updateuser(ctx *gin.Context){
 		Userhash: req.Userhash,
 		ID: req.ID,
 	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	if authPayload.Admin == false{
+		err := errors.New("Not admin")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
 	
 	err := server.store.UpdateUsers(ctx, arg)
 
@@ -125,6 +138,15 @@ func (server *Server) deleteuser(ctx *gin.Context){
 		ctx.JSON(400, gin.H{"error": err.Error()})
         return
 	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	if authPayload.Admin == false{
+		err := errors.New("Not admin")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
 
 	err := server.store.Deleteusers(ctx, int32(req.ID))
 
@@ -180,6 +202,8 @@ func (server *Server) getDocumentsByID(ctx *gin.Context){
         return
 	}
 
+	
+
 	document, err := server.store.GetDocumentByID(ctx, req.ID)
 
 	if err != nil {
@@ -187,8 +211,19 @@ func (server *Server) getDocumentsByID(ctx *gin.Context){
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
-	ctx.JSON(http.StatusOK, document)
+	if authPayload.Admin == true{
+		ctx.JSON(http.StatusOK, document)
+		return
+	}else if authPayload.UserID == document.Createdby.Int32{
+		ctx.JSON(http.StatusOK, document)
+		return
+	}else{
+		err := errors.New("Not admin")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
 }
 
 
@@ -212,8 +247,19 @@ func (server *Server) getDocumentsByName(ctx *gin.Context){
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
-	ctx.JSON(http.StatusOK, document)
+	if authPayload.Admin == true{
+		ctx.JSON(http.StatusOK, document)
+		return
+	}else if authPayload.UserID == document.Createdby.Int32{
+		ctx.JSON(http.StatusOK, document)
+		return
+	}else{
+		err := errors.New("not admin")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
 }
 
 
@@ -229,41 +275,36 @@ func (server *Server) deleteDocumentAdmin(ctx *gin.Context){
         return
 	}
 
-	err := server.store.DeleteDocumentAdmin(ctx, req.documentid)
+	document, err := server.store.GetDocumentByID(ctx, req.documentid)
 
 	if err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(400, gin.H{"error": errorResponse(err)})
+		return
+	}
+	
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	if authPayload.Admin == true{
+		err := server.store.DeleteDocumentAdmin(ctx, req.documentid)
+		if err != nil {
+			ctx.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+	}else if authPayload.UserID == document.Createdby.Int32{
+		err := server.store.DeleteDocumentAdmin(ctx, req.documentid)
+		if err != nil {
+			ctx.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+	}else{
+		err := errors.New("not admin")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
-}
-
-
-type deleteDocumentNormal struct {
-	documentid int32 `json:"documentid"`
-	Createdby  sql.NullInt32 `json:"createdby"`
-}
-
-func (server *Server) deleteDocumentNormal(ctx *gin.Context){
-	var req deleteDocumentNormal
-
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
-        return
-	}
-
-	arg := DB.DeleteDocumentNormalParams{
-		Documentid: req.documentid,
-		Createdby: req.Createdby,
-	}
-
-	err := server.store.DeleteDocumentNormal(ctx, arg)
-
-	if err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
+	
 
 }
+
 
 

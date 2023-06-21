@@ -17,7 +17,7 @@ RETURNING *;
 
 /* All Get operations */
 -- name: GetUserByIDAndAdmin :one
-SELECT * FROM users WHERE id = $1 AND admin = $2;
+SELECT * FROM users WHERE id = $1;
 
 -- name: GetUserByID :one
 SELECT * FROM users WHERE id = $1;
@@ -28,7 +28,7 @@ SELECT * FROM users WHERE username = $1;
 -- name: GetDocumentByCreatebyNormal :many
 SELECT * FROM document WHERE documentid = $1 AND createdby = $2;
 
--- name: GetDocumentByID :many
+-- name: GetDocumentByID :one
 SELECT * FROM document WHERE documentid = $1;
 
 /* All Update operations */
