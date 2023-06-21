@@ -6,7 +6,6 @@ import (
 	"DB/util"
 	"database/sql"
 	"fmt"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -54,21 +53,6 @@ func NewServer(config util.Config, store *DB.Store) (*Server,error) {
     server.router = router
 
     return server, nil
-}
-
-func Init() {
-	var err error
-    sqlDb, err = sql.Open("postgres", "postgres://postgres:postgrespw@postgres:5432")
-    if err!= nil {
-        panic(err)
-    }
-	r := gin.Default()
-	r.GET("/normal", func(c *gin.Context) {
-        c.JSON(http.StatusOK, gin.H{
-            "message": "hello",
-        })
-    })
-	r.Run(":0800")
 }
 
 type CreateDocumentParams struct {

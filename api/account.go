@@ -220,7 +220,7 @@ func (server *Server) getDocumentsByID(ctx *gin.Context){
 		ctx.JSON(http.StatusOK, document)
 		return
 	}else{
-		err := errors.New("Not admin")
+		err := errors.New("not admin")
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
